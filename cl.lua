@@ -1,56 +1,50 @@
 local isTalking = false
-local isMuted = false
-local vRange = 8.0
-local show = false 
+local voiceMode = 2
+local show = true
 
-function doUpdate()
-	SendNUIMessage({
-		show = show,  -- Disable hud if settings menu is active
-		talking = isTalking,
-		muted = isMuted,
-		range = vRange
-	})
+local function doUpdate()
+    SendNUIMessage({
+        show = show,
+        talking = isTalking,
+        muted = false,
+        mode = voiceMode
+    })
 end
 
-
-
-RegisterNetEvent("syn_displayrange2")
-AddEventHandler("syn_displayrange2", function(t)
-	show = t
-	SendNUIMessage({
-		show = show,  -- Disable hud if settings menu is active
-		talking = isTalking,
-		muted = isMuted,
-		range = vRange
-	})
+AddStateBagChangeHandler('proximity', ('player:%s'):format(GetPlayerServerId(PlayerId())), function(_, _, value)
+    if not value then return end
+    voiceMode = value.index or 2
+    doUpdate()
 end)
 
-
-RegisterNetEvent("syn_talking")
-AddEventHandler("syn_talking", function(t)
-	isTalking = t
-	doUpdate()
+AddEventHandler('pma-voice:setTalkingMode', function(newMode)
+    voiceMode = newMode
+    doUpdate()
 end)
 
---[[ RegisterNetEvent("SaltyChat_MicStateChanged")
-AddEventHandler("SaltyChat_MicStateChanged", function(t)
-	isMuted = t
-	doUpdate()
-end) ]]
-
-RegisterNetEvent("syn_changerange")
-AddEventHandler("syn_changerange", function(t)
-	if t == 1 then 
-		vRange = 3.0
-	elseif t == 2 then 
-		vRange = 8.0
-	elseif t == 3 then 
-		vRange = 15.0
-	elseif t ==4 then 
-		vRange = 32.0
-	end
-	print("Your Voice Range Is: "..vRange)
-	doUpdate()
+exports('toggleDisplay', function(visible)
+    show = visible
+    doUpdate()
 end)
 
+RegisterNetEvent('pma-display:toggle')
+AddEventHandler('pma-display:toggle', function(visible)
+    show = visible
+    doUpdate()
+end)
 
+CreateThread(function()
+    Wait(2000)
+    doUpdate()
+end)
+
+CreateThread(function()
+    while true do
+        Wait(200)
+        local talking = MumbleIsPlayerTalking(PlayerId()) == 1
+        if talking ~= isTalking then
+            isTalking = talking
+            doUpdate()
+        end
+    end
+end)

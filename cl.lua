@@ -33,18 +33,21 @@ AddEventHandler('pma-display:toggle', function(visible)
     doUpdate()
 end)
 
-CreateThread(function()
-    Wait(2000)
-    doUpdate()
-end)
 
 CreateThread(function()
+    repeat Wait(5000) until LocalPlayer.state.IsInSession
+    doUpdate()
+        
     while true do
-        Wait(200)
-        local talking = MumbleIsPlayerTalking(PlayerId()) == 1
-        if talking ~= isTalking then
-            isTalking = talking
-            doUpdate()
-        end
+        local sleep = 700
+        if not IsPlayerDead(PlayerId()) then
+            sleep = 200
+            local talking = MumbleIsPlayerTalking(PlayerId()) == 1
+            if talking ~= isTalking then
+               isTalking = talking
+               doUpdate()
+            end
+        end         
+        Wait(sleep)    
     end
 end)
